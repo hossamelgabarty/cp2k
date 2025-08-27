@@ -77,7 +77,8 @@ MODULE cp2k_runs
         do_fist, do_ipi, do_mixed, do_nnp, do_opt_basis, do_optimize_input, do_qmmm, do_qs, &
         do_sirius, do_swarm, do_tamc, do_test, do_tree_mc, do_tree_mc_ana, driver_run, ehrenfest, &
         energy_force_run, energy_run, geo_opt_run, linear_response_run, mol_dyn_run, mon_car_run, &
-        negf_run, none_run, pint_run, real_time_propagation, rtp_method_bse, tree_mc_run, vib_anal
+        negf_run, none_run, pint_run, real_time_propagation, rtp_method_bse, tree_mc_run, vib_anal, &
+        gpr_mlff_run
    USE input_cp2k,                      ONLY: create_cp2k_root_section
    USE input_cp2k_check,                ONLY: check_cp2k_input
    USE input_cp2k_global,               ONLY: create_global_section
@@ -380,6 +381,9 @@ CONTAINS
          CALL neb(root_section, input_declaration, para_env, globenv)
       CASE (negf_run)
          CALL do_negf(force_env)
+      CASE (gpr_mlff_run)
+         CALL gpr_mlff_init(force_env)
+         CALL qs_mol_dyn(force_env, globenv)
       CASE default
          CPABORT("")
       END SELECT
