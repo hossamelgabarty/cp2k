@@ -72,6 +72,8 @@ MODULE force_env_types
    USE qs_environment_types,            ONLY: get_qs_env,&
                                               qs_env_release,&
                                               qs_environment_type
+   !USE on_fly_mlff_methods,             ONLY: prokyon_env_release
+   USE on_fly_mlff_types,               ONLY: prokyon_env_type, prokyon_env_release
 #include "./base/base_uses.f90"
 
    IMPLICIT NONE
@@ -144,6 +146,7 @@ MODULE force_env_types
 ! **************************************************************************************************
    TYPE force_env_type
       INTEGER :: ref_count = 0, in_use = 0, method_name_id = 0
+      LOGICAL :: do_on_fly_fitting= .FALSE.
       REAL(KIND=dp)                                    :: additional_potential = 0.0_dp
       TYPE(fist_environment_type), POINTER             :: fist_env => NULL()
       TYPE(meta_env_type), POINTER                     :: meta_env => NULL()
@@ -162,6 +165,7 @@ MODULE force_env_types
       TYPE(ipi_environment_type), POINTER              :: ipi_env => NULL()
       TYPE(section_vals_type), POINTER                 :: force_env_section => NULL()
       TYPE(section_vals_type), POINTER                 :: root_section => NULL()
+      TYPE(prokyon_env_type), POINTER                  :: on_fly_mlff_env => NULL()
    END TYPE force_env_type
 
 ! **************************************************************************************************
@@ -291,6 +295,10 @@ CONTAINS
             IF (ASSOCIATED(force_env%qmmmx_env)) THEN
                CALL qmmmx_env_release(force_env%qmmmx_env)
                DEALLOCATE (force_env%qmmmx_env)
+            END IF
+            IF (ASSOCIATED(force_env%on_fly_mlff_env)) THEN
+               CALL prokyon_env_release(force_env%on_fly_mlff_env)
+               DEALLOCATE (force_env%on_fly_mlff_env)
             END IF
             CALL section_vals_release(force_env%force_env_section)
             CALL section_vals_release(force_env%root_section)

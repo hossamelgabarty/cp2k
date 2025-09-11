@@ -162,6 +162,8 @@ MODULE force_env_methods
                                               virial_p_type,&
                                               virial_type,&
                                               zero_virial
+   USE on_fly_mlff_methods,             ONLY: prokyon_predict, prokyon_train, &
+                                              prokyon_env_init
 #include "./base/base_uses.f90"
 
    IMPLICIT NONE
@@ -209,9 +211,9 @@ CONTAINS
                                                             output_unit, print_forces, print_grrm, &
                                                             print_scine
       LOGICAL :: calculate_forces, calculate_stress_tensor, do_apt_fd, energy_consistency, &
-         eval_ef, linres_run, my_skip, print_components
+         eval_ef, linres_run, my_skip, print_components, do_mlff, use_mlff_forces
       REAL(KIND=dp)                                      :: checksum, e_entropy, e_gap, e_pot, &
-                                                            fconv, sum_energy
+                                                            fconv, sum_energy, mlff_energy
       REAL(KIND=dp), DIMENSION(3)                        :: grand_total_force, total_force
       TYPE(atprop_type), POINTER                         :: atprop_env
       TYPE(cell_type), POINTER                           :: cell
@@ -232,6 +234,8 @@ CONTAINS
       calculate_forces = .TRUE.
       energy_consistency = .FALSE.
       linres_run = .FALSE.
+      do_mlff = .FALSE.
+      use_mlff_forces = .FALSE.
       e_gap = -1.0_dp
       e_entropy = -1.0_dp
       unit_string = ""
@@ -254,6 +258,12 @@ CONTAINS
       CALL cp_subsys_get(subsys, virial=virial, atprop=atprop_env, cell=cell)
       IF (virial%pv_availability) CALL zero_virial(virial, reset=.FALSE.)
 
+      do_mlff = force_env%do_on_fly_fitting
+      If (do_mlff .AND. calculate_stress_tensor) THEN
+         CPABORT("On-the-fly machine learning is currently not implemented for the stress tensor")
+      END IF
+
+
       nat = force_env_get_natom(force_env)
       CALL atprop_init(atprop_env, nat)
       IF (eval_ef) THEN
@@ -261,7 +271,21 @@ CONTAINS
          CASE (use_fist_force)
             CALL fist_calc_energy_force(force_env%fist_env)
          CASE (use_qs_force)
-            CALL qs_calc_energy_force(force_env%qs_env, calculate_forces, energy_consistency, linres_run)
+            IF (do_mlff) THEN
+               CALL prokyon_predict(force_env%on_fly_mlff_env, mlff_energy, use_mlff_forces)
+               !TODO make sure that prokyon interface is storing forces in the force_env
+
+               !TODO make sure that nothing nonsensical happens, like calling post-scf methods
+
+               !TODO I am not making any use of the prokyon_env I can just pass the prokyon env
+               !     in these functions, and use the links there to access force_env
+            END IF
+            !TODO abort runs incompatible with mlff, if any
+            IF (.NOT. use_mlff_forces) THEN
+               CALL qs_calc_energy_force(force_env%qs_env, calculate_forces, energy_consistency, linres_run)
+               CALL force_env_get(force_env, potential_energy=e_pot)
+               CALL prokyon_train(force_env%on_fly_mlff_env, energy=e_pot)
+            END IF
          CASE (use_pwdft_force)
             IF (virial%pv_availability .AND. calculate_stress_tensor) THEN
                CALL pwdft_calc_energy_force(force_env%pwdft_env, calculate_forces,.NOT. virial%pv_numer)
@@ -350,7 +374,11 @@ CONTAINS
          CALL rescale_forces(force_env)
       END IF
 
-      CALL force_env_get(force_env, potential_energy=e_pot)
+      IF (use_mlff_forces) THEN
+         e_pot = mlff_energy
+      ELSE
+         CALL force_env_get(force_env, potential_energy=e_pot)
+      END IF
 
       ! Print energy always in the same format for all methods
       output_unit = cp_print_key_unit_nr(logger, force_env%force_env_section, "PRINT%PROGRAM_RUN_INFO", &
@@ -843,6 +871,12 @@ CONTAINS
          force_env%meta_env => meta_env
       ELSE
          NULLIFY (force_env%meta_env)
+      END IF
+
+      CALL section_vals_val_get(force_env_section, "OnFly%_SECTION_PARAMETERS_", &
+                                l_val=force_env%do_on_fly_fitting)
+      IF (force_env%do_on_fly_fitting) THEN
+         CALL prokyon_env_init(force_env%qs_env, force_env_section)
       END IF
 
    END SUBROUTINE force_env_create

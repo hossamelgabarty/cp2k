@@ -40,7 +40,7 @@ MODULE md_run
    USE input_constants,                 ONLY: &
         ehrenfest, langevin_ensemble, npe_f_ensemble, npe_i_ensemble, &
         nph_uniaxial_damped_ensemble, nph_uniaxial_ensemble, npt_f_ensemble, npt_i_ensemble, &
-        npt_ia_ensemble, reftraj_ensemble, gpr_mlff_run
+        npt_ia_ensemble, reftraj_ensemble
    USE input_cp2k_check,                ONLY: remove_restart_info
    USE input_section_types,             ONLY: section_vals_get_subs_vals,&
                                               section_vals_remove_values,&
@@ -227,14 +227,6 @@ CONTAINS
       IF (run_type_id == ehrenfest) CALL set_md_env(md_env, ehrenfest_md=.TRUE.)
 
       CALL create_simpar_type(simpar)
-
-      IF (id_run == gpr_mlff_run) simpar%do_gpr_mlff = .TRUE.
-      ! check barostat
-      ! CALL section_vals_get(barostat_section, explicit=explicit)
-      IF (ASSOCIATED(section_vals_get_subs_vals(md_section, "BAROSTAT", can_return_null=.TRUE.))) THEN
-
-      END IF
-
       force_env_section => force_env%force_env_section
       subsys_section => section_vals_get_subs_vals(force_env_section, "SUBSYS")
       CALL cp_add_iter_level(logger%iter_info, "MD")
@@ -333,11 +325,6 @@ CONTAINS
           (simpar%ensemble == nph_uniaxial_ensemble) .OR. &
           (simpar%ensemble == nph_uniaxial_damped_ensemble)) THEN
          check = virial%pv_availability
-
-         IF (simpar%do_gpr_mlff) THEN
-            CPABORT("On-the-fly machine learning is currently unavailable for methods that require the virial")
-         END IF
-
          IF (.NOT. check) &
             CALL cp_abort(__LOCATION__, &
                           "Virial evaluation not requested for this run in the input file!"// &
@@ -382,7 +369,6 @@ CONTAINS
             !     They'll fail in actual integrator if needed
             ! consistent_energies=.FALSE. by default
             CALL force_env_calc_energy_force(force_env, calc_force=.TRUE.)
-            ! Hossam
          END IF
 
          IF (ASSOCIATED(force_env%qs_env)) THEN
@@ -492,8 +478,6 @@ CONTAINS
 
          ! Velocity Verlet Integrator
          CALL velocity_verlet(md_env, globenv)
-
-         !Hossam
 
          ! Close Shake output if requested...
          CALL cp_print_key_finished_output(simpar%info_constraint, logger, &

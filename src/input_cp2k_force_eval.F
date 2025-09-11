@@ -180,6 +180,11 @@ CONTAINS
       CALL section_add_subsection(section, subsection)
       CALL section_release(subsection)
 
+      ! On-the-fly machine learning potential
+      CALL create_on_the_fly_mlff_section(subsection)
+      CALL section_add_subsection(section, subsection)
+      CALL section_release(subsection)
+
    END SUBROUTINE create_force_eval_section
 
 ! **************************************************************************************************
@@ -417,5 +422,147 @@ CONTAINS
       CALL section_release(print_key)
 
    END SUBROUTINE create_f_env_print_section
+
+! **************************************************************************************************
+!> \brief Creates the section controlling on-the-fly machine-learning FF
+!> \param section the section to create
+!> \date 09.2025
+!> \author Hossam Elgabarty
+! **************************************************************************************************
+   SUBROUTINE create_on_the_fly_mlff_section(section)
+      TYPE(section_type), POINTER                        :: section
+
+      TYPE(keyword_type), POINTER                        :: keyword
+
+      CPASSERT(.NOT. ASSOCIATED(section))
+      CALL section_create(section, __LOCATION__, name="OnFly", &
+                          description="Section controlling on-the-fly training of Gaussian Process Regression "//&
+                          "machine-learning force field.", &
+                          n_keywords=1, n_subsections=0, repeats=.FALSE.)
+      NULLIFY (keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="_SECTION_PARAMETERS_", &
+                          description="Activate on-the-fly machine learning", &
+                          usage="&OnFly T", &
+                          default_l_val=.FALSE., &
+                          lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="E_NOISE", &
+                          description="Energy noise", &
+                          default_r_val=cp_unit_to_cp2k(value=5.0_dp, &
+                                                        unit_str="kjmol"), &
+                          unit_str="hartree")
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="F_NOISE", &
+                          description="Force noise", &
+                          default_r_val=cp_unit_to_cp2k(value=10.0_dp, &
+                                                        unit_str="kjmol*angstrom^-1"), &
+                          unit_str="hartree*bohr^-1")
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, &
+                          name="TRAIN", &
+                          description="Train model. If false, an existing model is read"//&
+                          " from external file and used as-is. If set to .FALSE.,"//&
+                          " RESTART_FILE should be provided.", &
+                          default_l_val=.TRUE., &
+                          lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, &
+                          name="USE_KIND", &
+                          description="Use the atom kind string as written in the coordinates file to"//&
+                          " define the chemical species. This allows e.g. treating different sets of carbon atoms"//&
+                          " as different atomic species. The default behavior is to use the chemical element.", &
+                          default_l_val=.FALSE., &
+                          lone_keyword_l_val=.TRUE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, &
+                          name="CUTOFF_R", &
+                          description="Radial cutoff for constructing the ACE descriptors", &
+                          usage="CUTOFF_R 3.5", &
+                          default_r_val=cp_unit_to_cp2k(value=3.7_dp, &
+                                                        unit_str="angstrom"), &
+                          unit_str="angstrom",&
+                          repeats=.FALSE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, &
+                          name="PREDICTION_THRESHOLD", &
+                          description="Maximum error allowed in any predicted force component."//&
+                          " If any atom has an error > PREDICTION_THRESHOLD, CP2K forces are computed.", &
+                          usage="PREDICTION_THRESHOLD 100.0", &
+                          default_r_val=cp_unit_to_cp2k(value=100.0_dp, &
+                                                        unit_str="kjmol*angstrom^-1"), &
+                          unit_str="kjmol*angstrom^-1",&
+                          repeats=.FALSE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, &
+                          name="UPDATE_THRESHOLD", &
+                          description="Only atoms with an error in any force component bigger than this value"//&
+                          " are added to the sparse training set (Sparse Gaussian Process, SGP)."//&
+                          " This parameter must be less than (SGP) or equal to (no SGP) PREDICTION_THRESHOLD", &
+                          usage="UPDATE_THRESHOLD 100.0", &
+                          default_r_val=cp_unit_to_cp2k(value=100.0_dp, &
+                                                        unit_str="kjmol*angstrom^-1"), &
+                          unit_str="kjmol*angstrom^-1",&
+                          repeats=.FALSE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, &
+                          name="N_RAD", &
+                          description="Number of radial basis functions", &
+                          usage="N_RAD 8", &
+                          default_i_val=12, &
+                          repeats=.FALSE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, &
+                          name="L_MAX", &
+                          description="Maximum angular momentum", &
+                          usage="L_MAX 3", &
+                          default_i_val=3, &
+                          repeats=.FALSE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, &
+                          name="N_SKIP", &
+                          description="Use this number of force evaluations to train the model"//&
+                          " before attempting any predictions", &
+                          usage="N_SKIP 20", &
+                          default_i_val=20, &
+                          repeats=.FALSE.)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="RESTART_FILE", &
+                          description="Restart GPR from previous run.", &
+                          repeats=.FALSE., usage="RESTART_FILE <CHARACTER>", &
+                          type_of_var=lchar_t)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+      CALL keyword_create(keyword, __LOCATION__, name="INPUT_FILE", &
+                          description="Optional: Prokyon input file.", &
+                          repeats=.FALSE., usage="INPUT_FILE <CHARACTER>", &
+                          type_of_var=lchar_t)
+      CALL section_add_keyword(section, keyword)
+      CALL keyword_release(keyword)
+
+   END SUBROUTINE create_on_the_fly_mlff_section
 
 END MODULE input_cp2k_force_eval
