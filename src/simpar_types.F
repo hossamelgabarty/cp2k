@@ -89,8 +89,6 @@ MODULE simpar_types
       REAL(KIND=dp) :: soften_delta = -1.0_dp
       ! MD initialisation method
       INTEGER       :: initialization_method = -1
-      ! On-the-fly MLFF
-      LOGICAL       :: do_gpr_mlff = .FALSE.
    END TYPE simpar_type
 
    PUBLIC :: simpar_type, &
