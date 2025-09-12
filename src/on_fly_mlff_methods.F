@@ -50,7 +50,7 @@ MODULE on_fly_mlff_methods
 
    CHARACTER(len=*), PARAMETER, PRIVATE :: moduleN = 'on_fly_mlff_methods'
 
-   PUBLIC :: prokyon_predict, prokyon_train, prokyon_env_init
+   PUBLIC :: prokyon_predict, prokyon_train, prokyon_env_init, prokyon_env_release
 
 CONTAINS
 
@@ -265,5 +265,34 @@ CONTAINS
       PRINT *, "send forces MLFF"
 
    END SUBROUTINE prokyon_train
+
+!! **************************************************************************************************
+!!> \brief Clean up and send exit signal to prokyon
+!!> \param ...
+!!> \param filename ...
+!! **************************************************************************************************
+   SUBROUTINE prokyon_env_release(on_fly_mlff_env)
+      TYPE(prokyon_env_type), POINTER                      :: on_fly_mlff_env
+
+      CHARACTER(LEN=*), PARAMETER                          :: routineN = 'prokyon_release'
+
+
+      ! Where to call this function?
+      PRINT *, "release MLFF"
+      ! send prokyon exit signal
+      ! Deallocate force_env%on_fly_mlff_env = NULL()
+      IF (ASSOCIATED(on_fly_mlff_env)) THEN
+         IF (ASSOCIATED(on_fly_mlff_env%coords)) THEN
+            DEALLOCATE (on_fly_mlff_env%coords)
+         END IF
+         IF (ASSOCIATED(on_fly_mlff_env%c_forces)) THEN
+            DEALLOCATE (on_fly_mlff_env%c_forces)
+         END IF
+         IF (ASSOCIATED(on_fly_mlff_env%uncertainty)) THEN
+            DEALLOCATE (on_fly_mlff_env%uncertainty)
+         END IF
+      END IF
+
+   END SUBROUTINE prokyon_env_release
 
 END MODULE on_fly_mlff_methods

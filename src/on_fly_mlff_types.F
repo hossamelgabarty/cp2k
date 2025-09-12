@@ -24,6 +24,7 @@ MODULE on_fly_mlff_types
 
    !LOGICAL, SAVE                                      :: used_last = .FALSE.
 
+   ! I probably don't need the default values.
 
    TYPE prokyon_env_type
       LOGICAL                                            :: do_training, restart
@@ -46,37 +47,8 @@ MODULE on_fly_mlff_types
       ! mpi handle? -> driver
    END TYPE prokyon_env_type
 
-   PUBLIC :: prokyon_env_type, prokyon_env_release
+   PUBLIC :: prokyon_env_type
 
 CONTAINS
-
-!! **************************************************************************************************
-!!> \brief Clean up and send exit signal to prokyon
-!!> \param ...
-!!> \param filename ...
-!! **************************************************************************************************
-   SUBROUTINE prokyon_env_release(on_fly_mlff_env)
-      TYPE(prokyon_env_type), POINTER                      :: on_fly_mlff_env
-
-      CHARACTER(LEN=*), PARAMETER                          :: routineN = 'prokyon_release'
-
-
-      ! Where to call this function?
-      PRINT *, "release MLFF"
-      ! send prokyon exit signal
-      ! Deallocate force_env%on_fly_mlff_env = NULL()
-      IF (ASSOCIATED(on_fly_mlff_env)) THEN
-         IF (ASSOCIATED(on_fly_mlff_env%coords)) THEN
-            DEALLOCATE (on_fly_mlff_env%coords)
-         END IF
-         IF (ASSOCIATED(on_fly_mlff_env%c_forces)) THEN
-            DEALLOCATE (on_fly_mlff_env%c_forces)
-         END IF
-         IF (ASSOCIATED(on_fly_mlff_env%uncertainty)) THEN
-            DEALLOCATE (on_fly_mlff_env%uncertainty)
-         END IF
-      END IF
-
-   END SUBROUTINE prokyon_env_release
 
 END MODULE on_fly_mlff_types

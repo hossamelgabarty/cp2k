@@ -273,6 +273,7 @@ CONTAINS
          CASE (use_qs_force)
             IF (do_mlff) THEN
                CALL prokyon_predict(force_env%on_fly_mlff_env, mlff_energy, use_mlff_forces)
+               force_env%use_mlff_forces = use_mlff_forces
                !TODO make sure that prokyon interface is storing forces in the force_env
 
                !TODO make sure that nothing nonsensical happens, like calling post-scf methods

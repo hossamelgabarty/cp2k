@@ -72,8 +72,8 @@ MODULE force_env_types
    USE qs_environment_types,            ONLY: get_qs_env,&
                                               qs_env_release,&
                                               qs_environment_type
-   !USE on_fly_mlff_methods,             ONLY: prokyon_env_release
-   USE on_fly_mlff_types,               ONLY: prokyon_env_type, prokyon_env_release
+   USE on_fly_mlff_methods,             ONLY: prokyon_env_release
+   USE on_fly_mlff_types,               ONLY: prokyon_env_type
 #include "./base/base_uses.f90"
 
    IMPLICIT NONE
@@ -146,7 +146,7 @@ MODULE force_env_types
 ! **************************************************************************************************
    TYPE force_env_type
       INTEGER :: ref_count = 0, in_use = 0, method_name_id = 0
-      LOGICAL :: do_on_fly_fitting= .FALSE.
+      LOGICAL :: do_on_fly_fitting= .FALSE., use_mlff_forces = .FALSE.
       REAL(KIND=dp)                                    :: additional_potential = 0.0_dp
       TYPE(fist_environment_type), POINTER             :: fist_env => NULL()
       TYPE(meta_env_type), POINTER                     :: meta_env => NULL()
