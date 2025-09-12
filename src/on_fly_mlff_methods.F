@@ -114,7 +114,7 @@ CONTAINS
       CALL section_vals_val_get(mlff_section, "N_SKIP", i_val=on_fly_mlff_env%nskip)
 
       !TODO implement restart files
-      CALL section_vals_val_get(mlff_section, "RESTART_FILE", c_val=on_fly_mlff_env%restart_file)
+      !CALL section_vals_val_get(mlff_section, "RESTART_FILE", c_val=on_fly_mlff_env%restart_file)
 
       !TODO implement input files
       !CALL section_vals_val_get(mlff_section, "INPUT_FILE", c_val=on_fly_mlff_env%input_file)
@@ -239,6 +239,7 @@ CONTAINS
 
       CHARACTER(LEN=*), PARAMETER                        :: routineN = 'prokyon_send_training_set'
 
+      PRINT *, "Train MLFF"
 
       !CALL force_env_get(force_env, subsys=subsys)
       !CALL cp_subsys_get(subsys, particles=particles)
@@ -262,7 +263,7 @@ CONTAINS
 
       !DEALLOCATE (coords)
       !DEALLOCATE (forces)
-      PRINT *, "send forces MLFF"
+      PRINT *, "End train MLFF"
 
    END SUBROUTINE prokyon_train
 

@@ -259,9 +259,10 @@ CONTAINS
       IF (virial%pv_availability) CALL zero_virial(virial, reset=.FALSE.)
 
       do_mlff = force_env%do_on_fly_fitting
-      If (do_mlff .AND. calculate_stress_tensor) THEN
-         CPABORT("On-the-fly machine learning is currently not implemented for the stress tensor")
-      END IF
+      !TODO fix this, either implement stress tensor, or change confition on line 246 here
+      !If (do_mlff .AND. calculate_stress_tensor) THEN
+      !   CPABORT("On-the-fly machine learning is currently not implemented for the stress tensor")
+      !END IF
 
 
       nat = force_env_get_natom(force_env)
@@ -280,12 +281,13 @@ CONTAINS
 
                !TODO I am not making any use of the prokyon_env I can just pass the prokyon env
                !     in these functions, and use the links there to access force_env
-            END IF
-            !TODO abort runs incompatible with mlff, if any
-            IF (.NOT. use_mlff_forces) THEN
+               IF (.NOT. use_mlff_forces) THEN
+                  CALL qs_calc_energy_force(force_env%qs_env, calculate_forces, energy_consistency, linres_run)
+                  CALL force_env_get(force_env, potential_energy=e_pot)
+                  CALL prokyon_train(force_env%on_fly_mlff_env, energy=e_pot)
+               END IF
+            ELSE
                CALL qs_calc_energy_force(force_env%qs_env, calculate_forces, energy_consistency, linres_run)
-               CALL force_env_get(force_env, potential_energy=e_pot)
-               CALL prokyon_train(force_env%on_fly_mlff_env, energy=e_pot)
             END IF
          CASE (use_pwdft_force)
             IF (virial%pv_availability .AND. calculate_stress_tensor) THEN
