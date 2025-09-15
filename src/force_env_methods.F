@@ -273,14 +273,12 @@ CONTAINS
             CALL fist_calc_energy_force(force_env%fist_env)
          CASE (use_qs_force)
             IF (do_mlff) THEN
+               CPASSERT(ASSOCIATED(force_env%on_fly_mlff_env))
                CALL prokyon_predict(force_env%on_fly_mlff_env, mlff_energy, use_mlff_forces)
                force_env%use_mlff_forces = use_mlff_forces
-               !TODO make sure that prokyon interface is storing forces in the force_env
 
                !TODO make sure that nothing nonsensical happens, like calling post-scf methods
 
-               !TODO I am not making any use of the prokyon_env I can just pass the prokyon env
-               !     in these functions, and use the links there to access force_env
                IF (.NOT. use_mlff_forces) THEN
                   CALL qs_calc_energy_force(force_env%qs_env, calculate_forces, energy_consistency, linres_run)
                   CALL force_env_get(force_env, potential_energy=e_pot)
@@ -879,7 +877,8 @@ CONTAINS
       CALL section_vals_val_get(force_env_section, "OnFly%_SECTION_PARAMETERS_", &
                                 l_val=force_env%do_on_fly_fitting)
       IF (force_env%do_on_fly_fitting) THEN
-         CALL prokyon_env_init(force_env%qs_env, force_env_section)
+         ALLOCATE (force_env%on_fly_mlff_env)
+         CALL prokyon_env_init(force_env%on_fly_mlff_env, force_env%qs_env, force_env_section)
       END IF
 
    END SUBROUTINE force_env_create

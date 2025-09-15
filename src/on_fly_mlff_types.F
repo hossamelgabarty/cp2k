@@ -24,7 +24,8 @@ MODULE on_fly_mlff_types
 
    !LOGICAL, SAVE                                      :: used_last = .FALSE.
 
-   ! I probably don't need the default values.
+   ! We don't need the default values as these are handled in the input section,
+   ! these are written for now just a reminder of typical starting values during testing
 
    TYPE prokyon_env_type
       LOGICAL                                            :: do_training, restart
@@ -40,11 +41,9 @@ MODULE on_fly_mlff_types
                                                             natoms
       REAL(kind=dp), DIMENSION(:), POINTER               :: c_forces, coords, uncertainty
       CHARACTER(LEN=default_path_length)                 :: restart_file !, input_file
-      !TYPE(force_env_type), POINTER                      :: force_env => NULL()
       TYPE(particle_list_type), POINTER                  :: particles => NULL()
       !TYPE(mp_para_env_type), POINTER                    :: para_env => NULL()
       ! Store internal state of GPR model?
-      ! mpi handle? -> driver
    END TYPE prokyon_env_type
 
    PUBLIC :: prokyon_env_type
